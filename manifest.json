@@ -7,7 +7,7 @@
     "default_popup": "popup/popup.html"
   },
   "icons": {
-    "64": "icon64.png"
+    "64": "img/icon64.png"
     
   },
   "background": {
