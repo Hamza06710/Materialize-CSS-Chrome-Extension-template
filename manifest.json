@@ -4,9 +4,10 @@
   "description": "Track usage of websites",
   "version": "1.0",
   "action": {
-    "default_popup": "/workspaces/Materialize-CSS-Chrome-Extension-template/popup.html"
+    "default_popup": "popup/popup.html"
   },
   "icons": {
+    "64": "icon64.png"
     
   },
   "background": {
