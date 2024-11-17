@@ -68,7 +68,7 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
     // Browser unfocused (e.g., minimized or user switched to another application)
     recordTabTime(activeTabId);
-    activeTabId = nulls;
+    activeTabId = null;
   } else {
     // Browser focused
     console.log("Working on")
