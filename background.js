@@ -6,6 +6,10 @@ const dbName = 'usageDataDB';
 const storeName = 'usageStore';
 let db = null;
 
+setInterval(() => {
+  chrome.runtime.sendMessage({msg: "focused_tab", data: {message:" HELLO THERE"}})
+}, 10000);
+
 // Open the IndexedDB database
 function openDatabase() {
   console.log('Opening IndexedDB...');
@@ -53,6 +57,7 @@ async function saveUsageData() {
   }
 
   transaction.oncomplete = () => {
+
     console.log('Usage data saved to IndexedDB:', usageData);
   };
 
@@ -145,6 +150,20 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   }
 });
 
+//listen for when a tab is queried
+// chrome.tabs.query({}, function (tabs) {
+//   tabs.forEach((tab) => {
+//     chrome.tabs.sendMessage( 
+//       tab.id,
+//       youtPayload, 
+//       function (response) {
+//        // do something here if you want
+       
+//       }
+//     );
+//   });
+// });
+
 // Listen for window focus changes
 chrome.windows.onFocusChanged.addListener((windowId) => {
   console.log(`Window focus changed: ${windowId}`);
@@ -160,6 +179,7 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
         activeTabId = tabs[0].id;
         activeTabStartTime = Date.now();
         console.log(`Browser focused, active tab set to: ${activeTabId}, Start Time: ${activeTabStartTime}`);
+
       }
     });
   }
