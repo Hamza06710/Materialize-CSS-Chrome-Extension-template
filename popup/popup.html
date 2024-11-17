@@ -1,41 +1,3 @@
-<!-- <!DOCTYPE html>
-<html lang"en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title> Screen Time </title>
-    <link rel="stylesheet" href="bulma.min.css" />
-  
-    <link rel="stylesheet" href="./popup.css"/>
-</head>
-<body>
-
-  <div class="container m-3">
-    <h1 class="title"> Screen Time </h1>
-    <div class="field">
-        <label class="label">Websites</label>
-        <span class="tag is-success"> Running </span>
-        <span class="tag is-danger"> Stopped </span>
-
-    </div>
-  </div>
-  <div class="row" style="width: 400px;">
-    <div class="column" style="">
-      <h3>Apps</h3>
-      <p>Youtube</p>
-      <br>
-      <p>Notion</p>
-    </div>
-    <div class="column" style="">
-      <h3>Time</h3>
-    </div>
-    <div class="column" style="">
-      <h3>Usage Limit</h3>
-    </div>
-  </div>
-
-</body>
-</html> -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -53,7 +15,7 @@
   <div class="container m-3">
     <div class="field">
       <label class="label">Usage: </label>
-      <div id="usage-list"></div> <!-- Display usage data here -->
+      <div id="usage-list"></div>
     </div>
 
     <div class="field">
@@ -72,7 +34,7 @@
 
   <!-- Modal for adding new limit -->
   <div id="limit-modal" class="modal">
-    <div class="modal-background"></div>
+    <div class="modal-background" id="modal-background"></div>
     <div class="modal-content">
       <div class="box">
         <h1 class="title">Set Website Limit</h1>
@@ -90,11 +52,11 @@
         </div>
         <div class="field">
           <button id="save-limit" class="button is-success">Save Limit</button>
-          <button class="button is-danger cancel-modal">Cancel</button>
+          <button id="cancel-modal" class="button is-danger">Cancel</button>
         </div>
       </div>
     </div>
-    <button class="modal-close is-large cancel-modal" aria-label="close"></button>
+    <button id="modal-close" class="modal-close is-large" aria-label="close"></button>
   </div>
 
   <script src="popup.js"></script>

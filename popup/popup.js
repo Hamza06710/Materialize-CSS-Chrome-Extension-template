@@ -1,183 +1,106 @@
-// // Initialize IndexedDB and handle data fetching
-// const dbName = 'usageDataDB';
-// const storeName = 'usageStore';
-// let db = null;
-
-
-// console.log('sdfsdf')
-// chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-//     alert(request.msg)
-// })
-
-// // Open the IndexedDB database
-// function openDatabase() {
-//   console.log("[openDatabase] Initializing IndexedDB...");
-//   return new Promise((resolve, reject) => {
-//     const request = indexedDB.open(dbName, 1);
-
-//     request.onupgradeneeded = (event) => {
-//       db = event.target.result;
-//       console.log("[openDatabase] Creating object store...");
-//       db.createObjectStore(storeName, { keyPath: 'hostname' });
-//     };
-
-//     request.onsuccess = (event) => {
-//       db = event.target.result;
-//       console.log("[openDatabase] IndexedDB opened successfully.");
-//       resolve(db);
-//     };
-
-//     request.onerror = (event) => {
-//       console.error("[openDatabase] Error opening IndexedDB:", event.target.error);
-//       reject(event.target.error);
-//     };
-//   });
-// }
-
-// // Fetch usage data from IndexedDB
-// function fetchUsageData() {
-//   console.log("[fetchUsageData] Fetching data from IndexedDB...");
-//   return new Promise((resolve, reject) => {
-//     const transaction = db.transaction([storeName], 'readonly');
-//     const store = transaction.objectStore(storeName);
-//     const request = store.getAll();
-
-//     request.onsuccess = (event) => {
-//       console.log("[fetchUsageData] Data fetched successfully:", event.target.result);
-//       resolve(event.target.result);
-//     };
-
-//     request.onerror = (event) => {
-//       console.error("[fetchUsageData] Error fetching data:", event.target.error);
-//       reject(event.target.error);
-//     };
-//   });
-// }
-
-// // Format and display usage data
-// function formatUsageData(usageData) {
-//   console.log("[formatUsageData] Formatting usage data:", usageData);
-//   const usageList = document.createElement("ul");
-//   usageList.style.marginLeft = "1em";
-//   let totalTime = 0;
-
-//   Object.entries(usageData).forEach(([website, time]) => {
-//     console.log(`[formatUsageData] Website: ${website}, Time: ${time} minutes`);
-//     const listItem = document.createElement("li");
-//     listItem.textContent = `${website}: ${time} minutes`;
-//     usageList.appendChild(listItem);
-//     totalTime += time;
-//   });
-
-//   const totalTimeElement = document.createElement("p");
-//   totalTimeElement.textContent = `Total Time: ${totalTime} minutes`;
-//   usageField.appendChild(totalTimeElement);
-//   usageField.appendChild(usageList);
-// }
-
-// // Fetch and display usage stats
-// async function loadUsage() {
-//   console.log("[loadUsage] Loading usage data...");
-//   usageField.innerHTML = ''; // Clear previous usage data
-//   try {
-//     const usageData = await fetchUsageData();
-//     if (usageData.length > 0) {
-//       console.log("[loadUsage] Usage data found:", usageData);
-//       const formattedData = usageData.reduce((acc, record) => {
-//         acc[record.hostname] = record.time;
-//         return acc;
-//       }, {});
-//       formatUsageData(formattedData);
-//     } else {
-//       console.log("[loadUsage] No usage data found.");
-//       usageField.textContent = "Usage: No data available";
-//     }
-//   } catch (error) {
-//     console.error("[loadUsage] Error fetching usage data:", error);
-//     usageField.textContent = "Usage: Error loading data";
-//   }
-// }
-
-// // Load limits from chrome.storage.local
-// function loadLimits() {
-//   console.log("[loadLimits] Loading limits...");
-//   chrome.storage.local.get(["limits"], (data) => {
-//     if (data.limits) {
-//       console.log("[loadLimits] Limits found:", data.limits);
-//       limitsSelect.innerHTML = "";
-//       Object.entries(data.limits).forEach(([website, limit]) => {
-//         console.log(`[loadLimits] Website: ${website}, Limit: ${limit} minutes`);
-//         const option = document.createElement("option");
-//         option.textContent = `${website} - ${limit} minutes`;
-//         limitsSelect.appendChild(option);
-//       });
-//     } else {
-//       console.log("[loadLimits] No limits found.");
-//       const placeholder = document.createElement("option");
-//       placeholder.textContent = "No limits set";
-//       placeholder.disabled = true;
-//       limitsSelect.appendChild(placeholder);
-//     }
-//   });
-// }
-
-// // Modal controls
-// function openModal() {
-//   console.log("[openModal] Opening modal...");
-//   limitModal.classList.add("is-active");
-// }
-
-// function closeModal() {
-//   console.log("[closeModal] Closing modal...");
-//   limitModal.classList.remove("is-active");
-// }
-
-// // console.log('sdfsdf')
-// // Event listeners for modal controls
-// // addLimitButton.addEventListener("click", () => {
-// //   console.log("[addLimitButton] Add Limit button clicked.");
-// //   openModal();
-// // });
-
-// // cancelModalButtons.forEach((button) =>
-// //   button.addEventListener("click", () => {
-// //     console.log("[cancelModalButtons] Cancel/close button clicked.");
-// //     closeModal();
-// //   })
-// // );
-
-// // modalBackground.addEventListener("click", () => {
-// //   console.log("[modalBackground] Modal background clicked.");
-// //   closeModal();
-// // });
-
-// // // Auto-load data when popup is opened
-// // document.addEventListener("DOMContentLoaded", () => {
-// //   console.log("[DOMContentLoaded] Popup loaded.");
-  
-// //   // Ensure IndexedDB is open before loading usage and limits
-// //   openDatabase().then(() => {
-// //     console.log("[DOMContentLoaded] Database opened.");
-// //     loadUsage();
-// //     loadLimits();
-// //   }).catch(error => {
-// //     console.error("[DOMContentLoaded] Error initializing popup:", error);
-// //   });
-// // });
-
-// // // Listen for changes in storage and update usage
-// // chrome.storage.onChanged.addListener((changes, areaName) => {
-// //   console.log("[onChanged] Storage changed. Area:", areaName, "Changes:", changes);
-// //   if (areaName === "local" && changes.usage) {
-// //     loadUsage();
-// //   }
-// // });
 const dbName = 'usageDataDB';
 const storeName = 'usageStore';
 let db = null;
 const usageField = document.getElementById("usage-list"); // The container where the usage data will be displayed
 const limitsSelect = document.getElementById("limits-select"); // The dropdown for limits
+document.addEventListener("DOMContentLoaded", () => {
+  const addLimitButton = document.getElementById("add-limit-button");
+  const limitModal = document.getElementById("limit-modal");
+  const modalBackground = document.getElementById("modal-background");
+  const cancelModalButton = document.getElementById("cancel-modal");
+  const modalCloseButton = document.getElementById("modal-close");
+  const saveLimitButton = document.getElementById("save-limit");
 
+  // Function to open the modal
+  function openModal() {
+    limitModal.classList.add("is-active");
+  }
+
+  // Function to close the modal
+  function closeModal() {
+    limitModal.classList.remove("is-active");
+  }
+  function loadLimits() {
+    console.log("[loadLimits] Attempting to load limits...");
+  
+    const limitsSelect = document.getElementById("limits-select");
+    if (!limitsSelect) {
+      console.error("[loadLimits] Error: Limits dropdown element not found.");
+      return;
+    }
+  
+    // Clear previous options
+    limitsSelect.innerHTML = "";
+  
+    // Retrieve limits from chrome.storage.local
+    chrome.storage.local.get(["limits"], (data) => {
+      if (chrome.runtime.lastError) {
+        console.error("[loadLimits] Error accessing chrome.storage:", chrome.runtime.lastError);
+        return;
+      }
+  
+      const limits = data.limits || {};
+      console.log("[loadLimits] Retrieved limits:", limits);
+  
+      if (Object.keys(limits).length === 0) {
+        // If no limits, show a placeholder
+        const placeholder = document.createElement("option");
+        placeholder.textContent = "No limits set";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        limitsSelect.appendChild(placeholder);
+      } else {
+        // Populate dropdown with limits
+        Object.entries(limits).forEach(([website, limit]) => {
+          const option = document.createElement("option");
+          option.textContent = `${website} - ${limit} minutes`;
+          limitsSelect.appendChild(option);
+        });
+      }
+    });
+  }
+  
+  // Function to save the limit
+  function saveLimit() {
+    const websiteUrl = document.getElementById("website-url").value.trim();
+    const timeLimit = parseInt(document.getElementById("time-limit").value.trim(), 10);
+
+    if (!websiteUrl || isNaN(timeLimit) || timeLimit <= 0) {
+      alert("Please enter a valid URL and time limit.");
+      return;
+    }
+
+    let domain;
+    try {
+      domain = new URL(websiteUrl).hostname; // Simplify URL to hostname
+    } catch (error) {
+      alert("Invalid URL format. Please enter a valid URL.");
+      return;
+    }
+
+    // Save the limit in chrome.storage.local
+    chrome.storage.local.get(["limits"], (data) => {
+      const limits = data.limits || {};
+      limits[domain] = timeLimit;
+
+      chrome.storage.local.set({ limits }, () => {
+        alert(`Limit set: ${domain} - ${timeLimit} minutes`);
+        closeModal(); // Close modal after saving
+        loadLimits(); // Refresh limits dropdown
+      });
+    });
+  }
+
+  // Attach event listeners
+  addLimitButton.addEventListener("click", openModal);
+  modalBackground.addEventListener("click", closeModal);
+  cancelModalButton.addEventListener("click", closeModal);
+  modalCloseButton.addEventListener("click", closeModal);
+  saveLimitButton.addEventListener("click", saveLimit);
+
+  // Load existing limits (defined elsewhere)
+  loadLimits();
+});
 // Open the IndexedDB database
 function openDatabase() {
   console.log("[openDatabase] Initializing IndexedDB...");
@@ -185,14 +108,17 @@ function openDatabase() {
     const request = indexedDB.open(dbName, 1);
 
     request.onupgradeneeded = (event) => {
+      console.log("[openDatabase] Upgrade needed, setting up database schema...");
       db = event.target.result;
-      console.log("[openDatabase] Creating object store...");
-      db.createObjectStore(storeName, { keyPath: 'hostname' });
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName, { keyPath: 'hostname' });
+        console.log("[openDatabase] Object store created:", storeName);
+      }
     };
 
     request.onsuccess = (event) => {
       db = event.target.result;
-      console.log("[openDatabase] IndexedDB opened successfully.");
+      console.log("[openDatabase] IndexedDB opened successfully:", db);
       resolve(db);
     };
 
@@ -205,8 +131,14 @@ function openDatabase() {
 
 // Fetch usage data from IndexedDB
 function fetchUsageData() {
-  console.log("[fetchUsageData] Fetching data from IndexedDB...");
+  console.log("[fetchUsageData] Starting fetch from IndexedDB...");
   return new Promise((resolve, reject) => {
+    if (!db) {
+      console.error("[fetchUsageData] Database is not initialized!");
+      reject("Database not initialized");
+      return;
+    }
+
     const transaction = db.transaction([storeName], 'readonly');
     const store = transaction.objectStore(storeName);
     const request = store.getAll();
@@ -225,16 +157,15 @@ function fetchUsageData() {
 
 // Format and display usage data
 function formatUsageData(usageData) {
-  console.log("[formatUsageData] Formatting usage data:", usageData);
+  console.log("[formatUsageData] Formatting and displaying usage data...");
   usageField.innerHTML = ''; // Clear previous data
   const usageList = document.createElement("ul");
-  usageList.style.marginLeft = "1em";
+  // usageList.style.marginLeft = "1em";
   let totalTime = 0;
 
-  // Only process the usage data entries that are valid
   Object.entries(usageData).forEach(([website, time]) => {
     if (time !== undefined && time !== null) {
-      console.log(`[formatUsageData] Website: ${website}, Time: ${time} hours`);
+      console.log(`[formatUsageData] Adding to UI - Website: ${website}, Time: ${time} minutes`);
       const listItem = document.createElement("li");
       listItem.textContent = `${website}: ${time} minutes`;
       usageList.appendChild(listItem);
@@ -242,79 +173,64 @@ function formatUsageData(usageData) {
     }
   });
 
-  // Display total time at the bottom
   const totalTimeElement = document.createElement("p");
+  totalTimeElement.style.marginLeft = "3em";
   totalTimeElement.textContent = `Total Time: ${totalTime} minutes`;
   usageField.appendChild(totalTimeElement);
   usageField.appendChild(usageList);
+  console.log("[formatUsageData] Usage data displayed successfully.");
 }
 
-// Listen for messages from background.js or other parts of the extension
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.msg === "focused_tab" && request.data) {
-    // Handle the message from background.js by updating the usage data
-    const usageData = request.data; // Assuming request.data contains the updated usage data
-    console.log("[onMessage] Received usage data:", usageData);
-    
-    // Format and display the received usage data
-    formatUsageData(usageData);
-  } else {
-    console.log("[onMessage] Ignored message:", request.msg);
+// Update UI with the latest usage data
+async function updateUsageUI() {
+  console.log("[updateUsageUI] Starting UI update...");
+  usageField.innerHTML = ''; // Clear previous usage data
+  try {
+    const usageData = await fetchUsageData();
+    if (usageData.length > 0) {
+      console.log("[updateUsageUI] Usage data retrieved:", usageData);
+      const formattedData = usageData.reduce((acc, record) => {
+        acc[record.hostname] = record.time;
+        return acc;
+      }, {});
+      formatUsageData(formattedData); // Display the usage data
+    } else {
+      console.log("[updateUsageUI] No usage data found.");
+      usageField.textContent = "Usage: No data available";
+    }
+  } catch (error) {
+    console.error("[updateUsageUI] Error updating UI:", error);
+    usageField.textContent = "Usage: Error loading data";
   }
-
-  // Optionally, send a response back to acknowledge the message
-  sendResponse({status: "ok"});
-});
+}
 
 // Auto-load data when popup is opened
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("[DOMContentLoaded] Popup loaded.");
-
-  // Ensure IndexedDB is open before loading usage and limits
-  openDatabase().then(() => {
-    console.log("[DOMContentLoaded] Database opened.");
-    
-    // Fetch initial usage data from IndexedDB when the popup loads
-    fetchUsageData().then((usageData) => {
-      if (usageData.length > 0) {
-        const formattedData = usageData.reduce((acc, record) => {
-          acc[record.hostname] = record.time;
-          return acc;
-        }, {});
-        formatUsageData(formattedData);
-      } else {
-        usageField.textContent = "Usage: No data available";
-      }
-    }).catch((error) => {
-      console.error("[DOMContentLoaded] Error fetching initial data:", error);
-      usageField.textContent = "Error loading data";
+  console.log("[DOMContentLoaded] Popup loaded. Initializing...");
+  openDatabase()
+    .then(() => {
+      console.log("[DOMContentLoaded] Database initialized successfully.");
+      return updateUsageUI(); // Fetch and display usage data
+    })
+    .catch((error) => {
+      console.error("[DOMContentLoaded] Error initializing database:", error);
+      usageField.textContent = "Error initializing database";
     });
-
-    // Fetch limits if any from local storage or other sources
-    chrome.storage.local.get(["limits"], (data) => {
-      if (data.limits) {
-        const limits = data.limits;
-        limitsSelect.innerHTML = ''; // Clear previous options
-        Object.entries(limits).forEach(([website, limit]) => {
-          console.log(`[loadLimits] Website: ${website}, Limit: ${limit} minutes`);
-          const option = document.createElement("option");
-          option.textContent = `${website} - ${limit} minutes`;
-          limitsSelect.appendChild(option);
-        });
-      } else {
-        console.log("[loadLimits] No limits found.");
-        const placeholder = document.createElement("option");
-        placeholder.textContent = "No limits set";
-        placeholder.disabled = true;
-        limitsSelect.appendChild(placeholder);
-      }
-    });
-  }).catch((error) => {
-    console.error("[DOMContentLoaded] Error initializing popup:", error);
-  });
 });
 
-
-
-
-
+// Listen for messages from the background script to refresh usage data
+// chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+//   console.log("[onMessage] Message received:", request);
+//   if (request.msg === "update_usage") {
+//     console.log("[onMessage] Received 'update_usage' message. Refreshing data...");
+//     updateUsageUI()
+//       .then(() => {
+//         console.log("[onMessage] UI updated successfully.");
+//         sendResponse({ status: "Usage updated in popup" });
+//       })
+//       .catch((error) => {
+//         console.error("[onMessage] Error updating UI:", error);
+//         sendResponse({ status: "Error updating usage" });
+//       });
+//   }
+// });

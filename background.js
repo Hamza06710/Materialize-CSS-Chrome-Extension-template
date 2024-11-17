@@ -7,9 +7,9 @@ const dbName = 'usageDataDB';
 const storeName = 'usageStore';
 let db = null;
 
-setInterval(() => {
-  chrome.runtime.sendMessage({ msg: "focused_tab", data: { usageData } });
-}, 10000);
+// setInterval(() => {
+//   chrome.runtime.sendMessage({ msg: "focused_tab", data: { usageData } });
+// }, 10000);
 
 console.log("cats");
 
@@ -67,7 +67,15 @@ async function saveUsageData() {
     console.error('Error saving data to IndexedDB:', event.target.error);
   };
 }
+chrome.tabs.onCreated.addListener((tab) => {
+  const tabId = tab.id; // Get the new tab's ID
+  console.log(`New tab opened with ID: ${tabId}`);
 
+  // Store the tab ID in chrome.storage.local
+  chrome.storage.local.set({ currentTabId: tabId }, () => {
+    console.log(`Tab ID ${tabId} saved to storage.`);
+  });
+});
 // Record time spent on a tab
 async function recordTabTime(tabId) {
   console.log('recordTabTime called');
@@ -109,9 +117,9 @@ async function recordTabTime(tabId) {
     }
   }
 
-  activeTabStartTime = null; // Reset start time
-  activeTabId = null; // Reset active tab ID
-  console.log('State reset: activeTabId and activeTabStartTime cleared');
+  // activeTabStartTime = null; // Reset start time
+  // activeTabId = null; // Reset active tab ID
+  // console.log('State reset: activeTabId and activeTabStartTime cleared');
 }
 
 // Listen for tab activation
