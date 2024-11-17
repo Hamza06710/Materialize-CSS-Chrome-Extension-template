@@ -1,0 +1,27 @@
+h3 {
+    display: flex;
+    justify-content:space-between;
+    flex-direction: row;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  h1{
+    text-align: center;
+  }
+
+  button {
+    margin: 10px;
+    padding: 10px;
+    cursor: pointer;
+  }
+  .row {
+    /* width: 400px; */
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .column {
+    /* float: left;
+    width: 33.33%; */
+  }
