@@ -18,24 +18,34 @@ function openModal() {
   limitModal.classList.add("is-active");
 }
 
-function closeModal() {
-  log("Closing modal...");
-  limitModal.classList.remove("is-active");
+// Format usage data and display it
+function formatUsageData(usageData) {
+  const usageList = document.createElement("ul");
+  usageList.style.marginLeft = "1em";
+  let totalTime = 0; // Variable to calculate the total time
+
+  // Loop through the usage data and display each website with its time
+  Object.entries(usageData).forEach(([website, time]) => {
+    const listItem = document.createElement("li");
+    listItem.textContent = `${website}: ${time} minutes`;
+    usageList.appendChild(listItem);
+    totalTime += time; // Add the time for each website to the total time
+  });
+
+  // Display the total time spent
+  const totalTimeElement = document.createElement("p");
+  totalTimeElement.textContent = `Total Time: ${totalTime} minutes`;
+  usageField.appendChild(totalTimeElement);
+  usageField.appendChild(usageList);
 }
 
 // Fetch and display usage stats
 function loadUsage() {
   chrome.storage.local.get(["usage"], (data) => {
+    usageField.innerHTML = ''; // Clear previous usage data
     if (data.usage) {
       usageField.textContent = "Usage: "; // Reset label text
-      const usageList = document.createElement("ul");
-      usageList.style.marginLeft = "1em";
-      Object.entries(data.usage).forEach(([website, time]) => {
-        const listItem = document.createElement("li");
-        listItem.textContent = `${website}: ${time} minutes`;
-        usageList.appendChild(listItem);
-      });
-      usageField.appendChild(usageList);
+      formatUsageData(data.usage);
     } else {
       usageField.textContent = "Usage: No data available";
     }
@@ -121,4 +131,11 @@ document.addEventListener("DOMContentLoaded", () => {
   log("Popup loaded.");
   loadUsage();
   loadLimits();
+});
+
+// Listen for changes in chrome.storage and update usage
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && changes.usage) {
+    loadUsage(); // Reload usage when there's a change
+  }
 });
