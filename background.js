@@ -1,14 +1,17 @@
 let activeTabId = null; // ID of the currently active tab
 let activeTabStartTime = null; // Start time of the active tab
 const usageData = {}; // Object to store usage data
+console.log("rats");
 
 const dbName = 'usageDataDB';
 const storeName = 'usageStore';
 let db = null;
 
 setInterval(() => {
-  chrome.runtime.sendMessage({msg: "focused_tab", data: {usageData}})
+  chrome.runtime.sendMessage({ msg: "focused_tab", data: { usageData } });
 }, 10000);
+
+console.log("cats");
 
 // Open the IndexedDB database
 function openDatabase() {
@@ -41,7 +44,7 @@ async function saveUsageData() {
     console.error('Database not open yet, cannot save usage data.');
     return;
   }
-  
+
   console.log('Attempting to save usage data...');
   const transaction = db.transaction([storeName], 'readwrite');
   const store = transaction.objectStore(storeName);
@@ -57,7 +60,6 @@ async function saveUsageData() {
   }
 
   transaction.oncomplete = () => {
-
     console.log('Usage data saved to IndexedDB:', usageData);
   };
 
@@ -68,7 +70,6 @@ async function saveUsageData() {
 
 // Record time spent on a tab
 async function recordTabTime(tabId) {
-  // Add debugging info to verify activeTabId and activeTabStartTime
   console.log('recordTabTime called');
   console.log(`activeTabId: ${activeTabId}, activeTabStartTime: ${activeTabStartTime}`);
 
@@ -77,12 +78,9 @@ async function recordTabTime(tabId) {
     return; // Early exit if there's no active tab or start time
   }
 
-  console.log("Now time:" + Date.now())
-
-  const elapsedTime = Math.round((Date.now() - activeTabStartTime)); // Convert to minutes
-  console.log("time: " + elapsedTime)
+  const elapsedTime = Math.round((Date.now() - activeTabStartTime) / 1000 / 60); // Convert to minutes
+  console.log(`Elapsed Time: ${elapsedTime} minutes`);
   if (elapsedTime > 0) {
-    console.log(`Tab ID: ${tabId}, Elapsed Time: ${elapsedTime} minutes`);
     try {
       const tab = await new Promise((resolve, reject) => {
         chrome.tabs.get(tabId, (tab) => {
@@ -111,7 +109,6 @@ async function recordTabTime(tabId) {
     }
   }
 
-  // Only reset the state after all operations are completed
   activeTabStartTime = null; // Reset start time
   activeTabId = null; // Reset active tab ID
   console.log('State reset: activeTabId and activeTabStartTime cleared');
@@ -150,20 +147,6 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   }
 });
 
-//listen for when a tab is queried
-// chrome.tabs.query({}, function (tabs) {
-//   tabs.forEach((tab) => {
-//     chrome.tabs.sendMessage( 
-//       tab.id,
-//       youtPayload, 
-//       function (response) {
-//        // do something here if you want
-       
-//       }
-//     );
-//   });
-// });
-
 // Listen for window focus changes
 chrome.windows.onFocusChanged.addListener((windowId) => {
   console.log(`Window focus changed: ${windowId}`);
@@ -179,8 +162,8 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
         activeTabId = tabs[0].id;
         activeTabStartTime = Date.now();
         console.log(`Browser focused, active tab set to: ${activeTabId}, Start Time: ${activeTabStartTime}`);
-
       }
     });
   }
 });
+
