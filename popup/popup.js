@@ -1,37 +1,43 @@
-const statusTagRunning = document.querySelector(".tag.is-success");
-const statusTagStopped = document.querySelector(".tag.is-danger");
-const usageSelect = document.querySelector("select"); // The first <select> element
-const limitsSelect = document.querySelectorAll("select")[1]; // The second <select> element
-const addLimitButton = document.querySelector(".button.is-success");
+// Get references to HTML elements
+const usageField = document.querySelector(".field label.label:nth-of-type(1)");
+const limitsSelect = document.querySelector(".select select"); // The <select> element for limits
+const addLimitButton = document.getElementById("add-limit-button");
+const limitModal = document.getElementById("limit-modal");
+const saveLimitButton = document.getElementById("save-limit");
+const cancelModalButtons = document.querySelectorAll(".cancel-modal, .delete");
+const modalBackground = document.querySelector(".modal-background");
 
-// Function to update the status
-function updateStatus(isRunning) {
-  if (isRunning) {
-    statusTagRunning.style.display = "inline-block";
-    statusTagStopped.style.display = "none";
-  } else {
-    statusTagRunning.style.display = "none";
-    statusTagStopped.style.display = "inline-block";
-  }
+// Debugging helper
+function log(...args) {
+  console.log("[Popup.js]", ...args);
+}
+
+// Modal controls
+function openModal() {
+  log("Opening modal...");
+  limitModal.classList.add("is-active");
+}
+
+function closeModal() {
+  log("Closing modal...");
+  limitModal.classList.remove("is-active");
 }
 
 // Fetch and display usage stats
 function loadUsage() {
   chrome.storage.local.get(["usage"], (data) => {
     if (data.usage) {
-      // Clear and populate the usage dropdown
-      usageSelect.innerHTML = "";
-      Object.keys(data.usage).forEach((website) => {
-        const option = document.createElement("option");
-        option.textContent = `${website} - ${data.usage[website]} minutes`;
-        option.value = website;
-        usageSelect.appendChild(option);
+      usageField.textContent = "Usage: "; // Reset label text
+      const usageList = document.createElement("ul");
+      usageList.style.marginLeft = "1em";
+      Object.entries(data.usage).forEach(([website, time]) => {
+        const listItem = document.createElement("li");
+        listItem.textContent = `${website}: ${time} minutes`;
+        usageList.appendChild(listItem);
       });
+      usageField.appendChild(usageList);
     } else {
-      const placeholder = document.createElement("option");
-      placeholder.textContent = "No data available";
-      placeholder.disabled = true;
-      usageSelect.appendChild(placeholder);
+      usageField.textContent = "Usage: No data available";
     }
   });
 }
@@ -57,31 +63,62 @@ function loadLimits() {
   });
 }
 
-// Add a new limit
-addLimitButton.addEventListener("click", () => {
-  const website = prompt("Enter the website URL:");
-  const limit = prompt("Enter the time limit in minutes:");
+// Save a new limit to chrome.storage
+saveLimitButton.addEventListener("click", () => {
+  const websiteUrl = document.getElementById("website-url").value.trim();
+  const timeLimit = parseInt(document.getElementById("time-limit").value.trim(), 10);
 
-  if (website && limit) {
-    chrome.storage.local.get(["limits"], (data) => {
-      const limits = data.limits || {};
-      limits[website] = parseInt(limit, 10);
-      chrome.storage.local.set({ limits }, () => {
-        alert("Limit added!");
-        loadLimits(); // Refresh the limits dropdown
-      });
-    });
+  log("Save limit clicked with URL:", websiteUrl, "and time limit:", timeLimit);
+
+  if (!websiteUrl || isNaN(timeLimit) || timeLimit <= 0) {
+    alert("Please enter a valid URL and time limit.");
+    return;
   }
+
+  // Simplify the URL to its hostname
+  let domain;
+  try {
+    domain = new URL(websiteUrl).hostname;
+  } catch (error) {
+    alert("Invalid URL format. Please enter a valid URL.");
+    return;
+  }
+
+  // Save to storage
+  chrome.storage.local.get(["limits"], (data) => {
+    const limits = data.limits || {};
+    limits[domain] = timeLimit;
+
+    chrome.storage.local.set({ limits }, () => {
+      log(`Limit set for ${domain}: ${timeLimit} minutes`);
+      alert(`Limit set: ${domain} - ${timeLimit} minutes`);
+      closeModal(); // Close the modal
+      loadLimits(); // Refresh the limits dropdown
+    });
+  });
+});
+
+// Event listeners for modal controls
+addLimitButton.addEventListener("click", () => {
+  log("Add Limit button clicked.");
+  openModal();
+});
+
+cancelModalButtons.forEach((button) =>
+  button.addEventListener("click", () => {
+    log("Cancel/close button clicked.");
+    closeModal();
+  })
+);
+
+modalBackground.addEventListener("click", () => {
+  log("Modal background clicked.");
+  closeModal();
 });
 
 // Initialize the popup
 document.addEventListener("DOMContentLoaded", () => {
-  // Check if tracking is running
-  chrome.storage.local.get(["isRunning"], (data) => {
-    updateStatus(data.isRunning || false);
-  });
-
-  // Load data
+  log("Popup loaded.");
   loadUsage();
   loadLimits();
 });
