@@ -1,5 +1,6 @@
-let activeTabId = null; // ID of the currently active tab
-let activeTabStartTime = null; // Start time of the active tab
+
+let activeTabId = 0; // ID of the currently active tab
+let activeTabStartTime = 0; // Start time of the active tab
 const usageData = {}; // Object to store usage data
 
 // Save usage data to chrome.storage
@@ -71,14 +72,12 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
     activeTabId = null;
   } else {
     // Browser focused
-    console.log("Working on")
     chrome.tabs.query({ active: true, windowId }, (tabs) => {
       if (tabs.length > 0) {
         activeTabId = tabs[0].id;
         activeTabStartTime = Date.now();
       }
     });
-    recordTabTime(activeTabId);
   }
 });
 
@@ -95,3 +94,4 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.runtime.onSuspend.addListener(() => {
   recordTabTime(activeTabId);
 });
+

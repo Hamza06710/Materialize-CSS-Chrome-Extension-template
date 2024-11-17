@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Screen Time",
+  "name": "Screen Time Tracker",
   "description": "Track usage of websites",
   "version": "1.0",
   "action": {
