@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang"en">
 <head>
     <meta charset="UTF-8">
@@ -33,6 +33,71 @@
       <h3>Usage Limit</h3>
     </div>
   </div>
+
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Screen Time</title>
+    <link rel="stylesheet" href="bulma.min.css" />
+</head>
+<body>
+
+  <div class="container m-3">
+    <h1 class="title">Screen Time</h1>
+  </div>
+
+  <div class="container m-3">
+    <div class="field">
+      <label class="label">Usage: </label>
+      <div id="usage-list"></div> <!-- Display usage data here -->
+    </div>
+
+    <div class="field">
+      <label class="label">Limits</label>
+      <div class="select">
+        <select id="limits-select">
+          <!-- Limits will be populated here dynamically -->
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="container m-3">
+    <button class="button is-success" id="add-limit-button">Add Limits</button>
+  </div>
+
+  <!-- Modal for adding new limit -->
+  <div id="limit-modal" class="modal">
+    <div class="modal-background"></div>
+    <div class="modal-content">
+      <div class="box">
+        <h1 class="title">Set Website Limit</h1>
+        <div class="field">
+          <label class="label">Website URL</label>
+          <div class="control">
+            <input type="text" id="website-url" class="input" placeholder="Enter website URL">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Time Limit (in minutes)</label>
+          <div class="control">
+            <input type="number" id="time-limit" class="input" placeholder="Enter time limit">
+          </div>
+        </div>
+        <div class="field">
+          <button id="save-limit" class="button is-success">Save Limit</button>
+          <button class="button is-danger cancel-modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <button class="modal-close is-large cancel-modal" aria-label="close"></button>
+  </div>
+
+  <script src="popup.js"></script>
 
 </body>
 </html>

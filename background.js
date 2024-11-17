@@ -7,7 +7,7 @@ const storeName = 'usageStore';
 let db = null;
 
 setInterval(() => {
-  chrome.runtime.sendMessage({msg: "focused_tab", data: {message:" HELLO THERE"}})
+  chrome.runtime.sendMessage({msg: "focused_tab", data: {usageData}})
 }, 10000);
 
 // Open the IndexedDB database

@@ -234,7 +234,7 @@ function formatUsageData(usageData) {
   // Only process the usage data entries that are valid
   Object.entries(usageData).forEach(([website, time]) => {
     if (time !== undefined && time !== null) {
-      console.log(`[formatUsageData] Website: ${website}, Time: ${time} minutes`);
+      console.log(`[formatUsageData] Website: ${website}, Time: ${time} hours`);
       const listItem = document.createElement("li");
       listItem.textContent = `${website}: ${time} minutes`;
       usageList.appendChild(listItem);
