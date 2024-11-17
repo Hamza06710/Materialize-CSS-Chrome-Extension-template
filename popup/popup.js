@@ -1,100 +1,87 @@
-$(document).ready(function(){
-    
-// Use Chrome extension open new window
-$('#seolist').on('click', 'a', function(){
-     chrome.tabs.create({url: $(this).attr('href')});
-     return false;
-});
+const statusTagRunning = document.querySelector(".tag.is-success");
+const statusTagStopped = document.querySelector(".tag.is-danger");
+const usageSelect = document.querySelector("select"); // The first <select> element
+const limitsSelect = document.querySelectorAll("select")[1]; // The second <select> element
+const addLimitButton = document.querySelector(".button.is-success");
 
-//if (!location.origin)
-  //location.origin = location.protocol + "//" + location.host;
-    
-    //var currenturl = window.location.toString();
-    
-    //var currenturl = tabs[0].url;
-//chrome.tabs.query({'active': true, 'lastFocusedWindow': true}, function (tabs) {
-//    var currenturl = tabs[0].url;
-//});
-chrome.tabs.query({
-    active: true,
-    lastFocusedWindow: true
-}, function(tabs) {
-    // and use that tab to fill in out title and url
-    var tab = tabs[0];
-    console.log(tab.url);
-    //alert(tab.url);
-    //var newurl = nohttp(tab.url);
-    var curentwebsite= tab.url;
-
-//var newurl = location.origin.replace(/.*?:\/\//g, "");
-//var newurl = location.origin.replace(/^https?\:\/\//i, "");
-
-var urllist = [
-    {"url":"http://altnews.top","service":"RSS News"},
-    {"url":"http://scriptsmashup.com","service":"Wordpress Plugins"},
-    {"url":"http://softplug.com","service":"VST synths"},
-    {"url":"http://reveilletoi.com","service":"My blog"},
-    {"url":"http://allotoi.com","service":"Wordpress mobile plugin"},
-    {"url":"http://podzic.com","service":"Techno Music"},
-    {"url":"http://spiritualtv.org","service":"Spiritual Videos"},
-    {"url":"http://wpgit.org","service":"WP search on Github"},
-    {"url":"https://github.com/onigetoc/Materialize-CSS-Chrome-Extension-template","service":"Fork on Github"}
-
-  //{"url":"https://www.whois.com/whois/%s","service":"pineapple"},
-];
-    
-
-
-var html = '<a class="blue-text collection-item" href="' + curentwebsite + '" target="_blank">';
-  
-  html += '<img src="http://s2.googleusercontent.com/s2/favicons?domain=' + nohttp(baseurl(curentwebsite)) + '"/>';
-  html += nohttp(baseurl(curentwebsite)) + '<span class="new badge blue" data-badge-caption="Current Websiste NOW"><span><a/>';
-  
-  
-$.each(urllist, function(i, obj) {
-  //alert(obj.tagName);
-  html += '<a class="blue-text collection-item" href="' + obj.url + '" target="_blank">';
-  html += '<img src="http://s2.googleusercontent.com/s2/favicons?domain=' + baseurl(obj.url) + '"/>';
-  html += nohttp(baseurl(obj.url)) + '<span class="new badge blue" data-badge-caption="' + obj.service + '"><span><a/>';
-});
-  
-
-$("div.seolist").html(html);
-    
-    
-}); // chrome tab end
-
-/************************/
-// MATERIALIZE CSS
-
-  $(".dropdown-button").dropdown();
-  $('ul.tabs').tabs();
-  
-}); // Doc ready end
-
-function baseurl(url) {
-  var domain;
-  //find & remove protocol (http, ftp, etc.) and get domain
-  if (url.indexOf("://") > -1) {
-    domain = url.split('/')[2];
+// Function to update the status
+function updateStatus(isRunning) {
+  if (isRunning) {
+    statusTagRunning.style.display = "inline-block";
+    statusTagStopped.style.display = "none";
   } else {
-    domain = url.split('/')[0];
+    statusTagRunning.style.display = "none";
+    statusTagStopped.style.display = "inline-block";
   }
-  //find & remove port number
-  domain = domain.split(':')[0];
-
-  return domain;
 }
-//console.log(baseurl(url));
 
-/************************/
-function nohttp(url) {
-  //var protomatch = /^(https?|ftp):\/\//; // NB: not '.*'
-  //return url.replace(/^https?\:\/\//i, "");
-  //return url.replace(/.*?:\/\//g, "");
-  url = url.replace("www.", "");
-  return url.replace(/.*?:\/\//g, "");
-  //return url.replace((http|https):\/\)?;
+// Fetch and display usage stats
+function loadUsage() {
+  chrome.storage.local.get(["usage"], (data) => {
+    if (data.usage) {
+      // Clear and populate the usage dropdown
+      usageSelect.innerHTML = "";
+      Object.keys(data.usage).forEach((website) => {
+        const option = document.createElement("option");
+        option.textContent = `${website} - ${data.usage[website]} minutes`;
+        option.value = website;
+        usageSelect.appendChild(option);
+      });
+    } else {
+      const placeholder = document.createElement("option");
+      placeholder.textContent = "No data available";
+      placeholder.disabled = true;
+      usageSelect.appendChild(placeholder);
+    }
+  });
 }
-    
 
+// Fetch and display limits
+function loadLimits() {
+  chrome.storage.local.get(["limits"], (data) => {
+    if (data.limits) {
+      // Clear and populate the limits dropdown
+      limitsSelect.innerHTML = "";
+      Object.entries(data.limits).forEach(([website, limit]) => {
+        const option = document.createElement("option");
+        option.textContent = `${website} - ${limit} minutes`;
+        option.value = website;
+        limitsSelect.appendChild(option);
+      });
+    } else {
+      const placeholder = document.createElement("option");
+      placeholder.textContent = "No limits set";
+      placeholder.disabled = true;
+      limitsSelect.appendChild(placeholder);
+    }
+  });
+}
+
+// Add a new limit
+addLimitButton.addEventListener("click", () => {
+  const website = prompt("Enter the website URL:");
+  const limit = prompt("Enter the time limit in minutes:");
+
+  if (website && limit) {
+    chrome.storage.local.get(["limits"], (data) => {
+      const limits = data.limits || {};
+      limits[website] = parseInt(limit, 10);
+      chrome.storage.local.set({ limits }, () => {
+        alert("Limit added!");
+        loadLimits(); // Refresh the limits dropdown
+      });
+    });
+  }
+});
+
+// Initialize the popup
+document.addEventListener("DOMContentLoaded", () => {
+  // Check if tracking is running
+  chrome.storage.local.get(["isRunning"], (data) => {
+    updateStatus(data.isRunning || false);
+  });
+
+  // Load data
+  loadUsage();
+  loadLimits();
+});
