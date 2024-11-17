@@ -1,6 +1,6 @@
 
-let activeTabId = 0; // ID of the currently active tab
-let activeTabStartTime = 0; // Start time of the active tab
+let activeTabId = null; // ID of the currently active tab
+let activeTabStartTime = null; // Start time of the active tab
 const usageData = {}; // Object to store usage data
 
 // Save usage data to chrome.storage
@@ -69,7 +69,7 @@ chrome.windows.onFocusChanged.addListener((windowId) => {
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
     // Browser unfocused (e.g., minimized or user switched to another application)
     recordTabTime(activeTabId);
-    activeTabId = nulls;
+    activeTabId = null;
   } else {
     // Browser focused
     chrome.tabs.query({ active: true, windowId }, (tabs) => {
