@@ -1,4 +1,3 @@
-
 let activeTabId = null; // ID of the currently active tab
 let activeTabStartTime = null; // Start time of the active tab
 const usageData = {}; // Object to store usage data
