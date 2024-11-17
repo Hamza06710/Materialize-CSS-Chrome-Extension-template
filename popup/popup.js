@@ -1,38 +1,68 @@
-// Get references to HTML elements
-const usageField = document.querySelector(".field label.label:nth-of-type(1)");
-const limitsSelect = document.querySelector(".select select"); // The <select> element for limits
-const addLimitButton = document.getElementById("add-limit-button");
-const limitModal = document.getElementById("limit-modal");
-const saveLimitButton = document.getElementById("save-limit");
-const cancelModalButtons = document.querySelectorAll(".cancel-modal, .delete");
-const modalBackground = document.querySelector(".modal-background");
+// Initialize IndexedDB and handle data fetching
+const dbName = 'usageDataDB';
+const storeName = 'usageStore';
+let db = null;
 
-// Debugging helper
-function log(...args) {
-  console.log("[Popup.js]", ...args);
+// Open the IndexedDB database
+function openDatabase() {
+  console.log("[openDatabase] Initializing IndexedDB...");
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(dbName, 1);
+
+    request.onupgradeneeded = (event) => {
+      db = event.target.result;
+      console.log("[openDatabase] Creating object store...");
+      db.createObjectStore(storeName, { keyPath: 'hostname' });
+    };
+
+    request.onsuccess = (event) => {
+      db = event.target.result;
+      console.log("[openDatabase] IndexedDB opened successfully.");
+      resolve(db);
+    };
+
+    request.onerror = (event) => {
+      console.error("[openDatabase] Error opening IndexedDB:", event.target.error);
+      reject(event.target.error);
+    };
+  });
 }
 
-// Modal controls
-function openModal() {
-  log("Opening modal...");
-  limitModal.classList.add("is-active");
+// Fetch usage data from IndexedDB
+function fetchUsageData() {
+  console.log("[fetchUsageData] Fetching data from IndexedDB...");
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([storeName], 'readonly');
+    const store = transaction.objectStore(storeName);
+    const request = store.getAll();
+
+    request.onsuccess = (event) => {
+      console.log("[fetchUsageData] Data fetched successfully:", event.target.result);
+      resolve(event.target.result);
+    };
+
+    request.onerror = (event) => {
+      console.error("[fetchUsageData] Error fetching data:", event.target.error);
+      reject(event.target.error);
+    };
+  });
 }
 
-// Format usage data and display it
+// Format and display usage data
 function formatUsageData(usageData) {
+  console.log("[formatUsageData] Formatting usage data:", usageData);
   const usageList = document.createElement("ul");
   usageList.style.marginLeft = "1em";
-  let totalTime = 0; // Variable to calculate the total time
+  let totalTime = 0;
 
-  // Loop through the usage data and display each website with its time
   Object.entries(usageData).forEach(([website, time]) => {
+    console.log(`[formatUsageData] Website: ${website}, Time: ${time} minutes`);
     const listItem = document.createElement("li");
     listItem.textContent = `${website}: ${time} minutes`;
     usageList.appendChild(listItem);
-    totalTime += time; // Add the time for each website to the total time
+    totalTime += time;
   });
 
-  // Display the total time spent
   const totalTimeElement = document.createElement("p");
   totalTimeElement.textContent = `Total Time: ${totalTime} minutes`;
   usageField.appendChild(totalTimeElement);
@@ -40,31 +70,43 @@ function formatUsageData(usageData) {
 }
 
 // Fetch and display usage stats
-function loadUsage() {
-  chrome.storage.local.get(["usage"], (data) => {
-    usageField.innerHTML = ''; // Clear previous usage data
-    if (data.usage) {
-      usageField.textContent = "Usage: "; // Reset label text
-      formatUsageData(data.usage);
+async function loadUsage() {
+  console.log("[loadUsage] Loading usage data...");
+  usageField.innerHTML = ''; // Clear previous usage data
+  try {
+    const usageData = await fetchUsageData();
+    if (usageData.length > 0) {
+      console.log("[loadUsage] Usage data found:", usageData);
+      const formattedData = usageData.reduce((acc, record) => {
+        acc[record.hostname] = record.time;
+        return acc;
+      }, {});
+      formatUsageData(formattedData);
     } else {
+      console.log("[loadUsage] No usage data found.");
       usageField.textContent = "Usage: No data available";
     }
-  });
+  } catch (error) {
+    console.error("[loadUsage] Error fetching usage data:", error);
+    usageField.textContent = "Usage: Error loading data";
+  }
 }
 
-// Fetch and display limits
+// Load limits from chrome.storage.local
 function loadLimits() {
+  console.log("[loadLimits] Loading limits...");
   chrome.storage.local.get(["limits"], (data) => {
     if (data.limits) {
-      // Clear and populate the limits dropdown
+      console.log("[loadLimits] Limits found:", data.limits);
       limitsSelect.innerHTML = "";
       Object.entries(data.limits).forEach(([website, limit]) => {
+        console.log(`[loadLimits] Website: ${website}, Limit: ${limit} minutes`);
         const option = document.createElement("option");
         option.textContent = `${website} - ${limit} minutes`;
-        option.value = website;
         limitsSelect.appendChild(option);
       });
     } else {
+      console.log("[loadLimits] No limits found.");
       const placeholder = document.createElement("option");
       placeholder.textContent = "No limits set";
       placeholder.disabled = true;
@@ -73,69 +115,53 @@ function loadLimits() {
   });
 }
 
-// Save a new limit to chrome.storage
-saveLimitButton.addEventListener("click", () => {
-  const websiteUrl = document.getElementById("website-url").value.trim();
-  const timeLimit = parseInt(document.getElementById("time-limit").value.trim(), 10);
+// Modal controls
+function openModal() {
+  console.log("[openModal] Opening modal...");
+  limitModal.classList.add("is-active");
+}
 
-  log("Save limit clicked with URL:", websiteUrl, "and time limit:", timeLimit);
-
-  if (!websiteUrl || isNaN(timeLimit) || timeLimit <= 0) {
-    alert("Please enter a valid URL and time limit.");
-    return;
-  }
-
-  // Simplify the URL to its hostname
-  let domain;
-  try {
-    domain = new URL(websiteUrl).hostname;
-  } catch (error) {
-    alert("Invalid URL format. Please enter a valid URL.");
-    return;
-  }
-
-  // Save to storage
-  chrome.storage.local.get(["limits"], (data) => {
-    const limits = data.limits || {};
-    limits[domain] = timeLimit;
-
-    chrome.storage.local.set({ limits }, () => {
-      log(`Limit set for ${domain}: ${timeLimit} minutes`);
-      alert(`Limit set: ${domain} - ${timeLimit} minutes`);
-      closeModal(); // Close the modal
-      loadLimits(); // Refresh the limits dropdown
-    });
-  });
-});
+function closeModal() {
+  console.log("[closeModal] Closing modal...");
+  limitModal.classList.remove("is-active");
+}
 
 // Event listeners for modal controls
 addLimitButton.addEventListener("click", () => {
-  log("Add Limit button clicked.");
+  console.log("[addLimitButton] Add Limit button clicked.");
   openModal();
 });
 
 cancelModalButtons.forEach((button) =>
   button.addEventListener("click", () => {
-    log("Cancel/close button clicked.");
+    console.log("[cancelModalButtons] Cancel/close button clicked.");
     closeModal();
   })
 );
 
 modalBackground.addEventListener("click", () => {
-  log("Modal background clicked.");
+  console.log("[modalBackground] Modal background clicked.");
   closeModal();
 });
 
-// Initialize the popup
+// Auto-load data when popup is opened
 document.addEventListener("DOMContentLoaded", () => {
-  log("Popup loaded.");
-  loadUsage();
-  loadLimits();
+  console.log("[DOMContentLoaded] Popup loaded.");
+  
+  // Ensure IndexedDB is open before loading usage and limits
+  openDatabase().then(() => {
+    console.log("[DOMContentLoaded] Database opened.");
+    loadUsage();
+    loadLimits();
+  }).catch(error => {
+    console.error("[DOMContentLoaded] Error initializing popup:", error);
+  });
 });
 
-// Listen for changes in chrome.storage and update usage
+// Listen for changes in storage and update usage
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === 'local' && changes.usage) {
-    loadUsage(); // Reload usage when there's a change
+  console.log("[onChanged] Storage changed. Area:", areaName, "Changes:", changes);
+  if (areaName === "local" && changes.usage) {
+    loadUsage();
   }
 });

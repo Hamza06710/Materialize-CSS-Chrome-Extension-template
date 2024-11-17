@@ -8,20 +8,18 @@
   },
   "icons": {
     "64": "img/icon64.png"
-    
   },
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
   "permissions": [
-  "tabs",
-  "storage",
-  "notifications",
-  "alarms"
+    "tabs",
+    "storage",
+    "notifications",
+    "activeTab"
   ],
   "host_permissions": [
     "<all_urls>"
   ]
-  
 }
