@@ -1,17 +1,10 @@
 let activeTabId = null; // ID of the currently active tab
 let activeTabStartTime = null; // Start time of the active tab
 const usageData = {}; // Object to store usage data
-console.log("rats");
 
 const dbName = 'usageDataDB';
 const storeName = 'usageStore';
 let db = null;
-
-// setInterval(() => {
-//   chrome.runtime.sendMessage({ msg: "focused_tab", data: { usageData } });
-// }, 10000);
-
-console.log("cats");
 
 // Open the IndexedDB database
 function openDatabase() {
@@ -40,23 +33,23 @@ openDatabase();
 
 // Save usage data to IndexedDB
 async function saveUsageData() {
+  console.log('Attempting to save usage data to IndexedDB...');
   if (!db) {
     console.error('Database not open yet, cannot save usage data.');
     return;
   }
 
-  console.log('Attempting to save usage data...');
   const transaction = db.transaction([storeName], 'readwrite');
   const store = transaction.objectStore(storeName);
 
   for (const [hostname, time] of Object.entries(usageData)) {
+    console.log(`Saving data for hostname: ${hostname}, time: ${time}`);
     const record = { hostname, time };
     await new Promise((resolve, reject) => {
       const request = store.put(record); // Use put() to insert or update the data
       request.onsuccess = resolve;
       request.onerror = (event) => reject(event.target.error);
     });
-    console.log(`Saved data for ${hostname}: ${time} minutes`);
   }
 
   transaction.oncomplete = () => {
@@ -67,27 +60,78 @@ async function saveUsageData() {
     console.error('Error saving data to IndexedDB:', event.target.error);
   };
 }
-chrome.tabs.onCreated.addListener((tab) => {
-  const tabId = tab.id; // Get the new tab's ID
-  console.log(`New tab opened with ID: ${tabId}`);
 
-  // Store the tab ID in chrome.storage.local
-  chrome.storage.local.set({ currentTabId: tabId }, () => {
-    console.log(`Tab ID ${tabId} saved to storage.`);
+// Fetch limits from chrome.storage.local
+function getLimits() {
+  console.log('Fetching limits from chrome.storage.local...');
+  return new Promise((resolve) => {
+    chrome.storage.local.get(["limits"], (data) => {
+      console.log('Limits fetched:', data.limits || {});
+      resolve(data.limits || {});
+    });
   });
-});
+}
+
+// Check if a URL is supported (e.g., exclude chrome:// or internal URLs)
+function isSupportedUrl(url) {
+  try {
+    const protocol = new URL(url).protocol;
+    console.log(`Checking URL support for: ${url}`);
+    return protocol === "http:" || protocol === "https:";
+  } catch (error) {
+    console.error('Error checking URL support:', error);
+    return false;
+  }
+}
+
+// Notify the user when a tab is closed due to exceeding the time limit
+function notifyUser(hostname) {
+  console.log(`Notifying user about time limit reached for: ${hostname}`);
+  chrome.notifications.create({
+    type: "basic",
+    iconUrl: "icon.png",
+    title: "Time Limit Reached",
+    message: `Your time limit for ${hostname} has been reached, and the tab has been closed.`,
+  });
+}
+
+// Check if a tab exceeds its limit and close it if necessary
+async function checkAndCloseTab(hostname, tabId) {
+  console.log(`Checking time limits for hostname: ${hostname}, Tab ID: ${tabId}`);
+  const limits = await getLimits();
+  if (limits[hostname]) {
+    const limit = limits[hostname];
+    const usedTime = usageData[hostname] || 0;
+
+    console.log(`[checkAndCloseTab] Hostname: ${hostname}, Used: ${usedTime} mins, Limit: ${limit} mins`);
+
+    if (usedTime >= limit) {
+      console.log(`Time limit exceeded for ${hostname}. Closing tab ID: ${tabId}`);
+      chrome.tabs.remove(tabId, () => {
+        if (chrome.runtime.lastError) {
+          console.error(`[checkAndCloseTab] Error closing tab: ${chrome.runtime.lastError.message}`);
+        } else {
+          console.log(`[checkAndCloseTab] Tab with ID ${tabId} closed due to exceeded limit.`);
+          notifyUser(hostname);
+        }
+      });
+    }
+  } else {
+    console.log(`[checkAndCloseTab] No limit set for hostname: ${hostname}`);
+  }
+}
+
 // Record time spent on a tab
 async function recordTabTime(tabId) {
-  console.log('recordTabTime called');
-  console.log(`activeTabId: ${activeTabId}, activeTabStartTime: ${activeTabStartTime}`);
-
+  console.log(`Recording time for Tab ID: ${tabId}`);
   if (!tabId || !activeTabStartTime) {
-    console.log('No valid tab ID or start time, skipping record...');
-    return; // Early exit if there's no active tab or start time
+    console.log('No active tab or start time; skipping time recording.');
+    return;
   }
 
   const elapsedTime = Math.round((Date.now() - activeTabStartTime) / 1000 / 60); // Convert to minutes
-  console.log(`Elapsed Time: ${elapsedTime} minutes`);
+  console.log(`Elapsed time for Tab ID ${tabId}: ${elapsedTime} minutes`);
+
   if (elapsedTime > 0) {
     try {
       const tab = await new Promise((resolve, reject) => {
@@ -100,78 +144,76 @@ async function recordTabTime(tabId) {
         });
       });
 
-      // Extract the hostname from the URL
+      if (!isSupportedUrl(tab.url)) {
+        console.log(`[recordTabTime] Unsupported URL: ${tab.url}`);
+        return;
+      }
+
       const url = new URL(tab.url);
       const hostname = url.hostname;
-      console.log(`Tab URL: ${tab.url}, Hostname: ${hostname}`);
 
-      // Update the usage data
-      if (!usageData[hostname]) {
-        usageData[hostname] = 0;
-      }
+      console.log(`[recordTabTime] Updating usage data for hostname: ${hostname}`);
+      if (!usageData[hostname]) usageData[hostname] = 0;
       usageData[hostname] += elapsedTime;
 
-      await saveUsageData(); // Save the updated usage data to IndexedDB
+      await saveUsageData();
+
+      await checkAndCloseTab(hostname, tabId);
     } catch (error) {
       console.error('Error processing tab time:', error);
     }
   }
-
-  // activeTabStartTime = null; // Reset start time
-  // activeTabId = null; // Reset active tab ID
-  // console.log('State reset: activeTabId and activeTabStartTime cleared');
 }
 
 // Listen for tab activation
 chrome.tabs.onActivated.addListener((activeInfo) => {
-  console.log(`Tab activated: ${activeInfo.tabId}`);
-  
+  console.log('Tab activated:', activeInfo);
   if (activeTabId !== null) {
-    recordTabTime(activeTabId); // Record time spent on the previous tab
+    console.log(`Switching away from Tab ID: ${activeTabId}`);
+    recordTabTime(activeTabId);
   }
 
-  activeTabId = activeInfo.tabId; // Update the active tab
-  activeTabStartTime = Date.now(); // Start time for new tab
-  console.log(`Active tab set to: ${activeTabId}, Start Time: ${activeTabStartTime}`);
+  activeTabId = activeInfo.tabId;
+  activeTabStartTime = Date.now();
+  console.log(`New active Tab ID: ${activeTabId}`);
 });
 
-// Listen for tab updates (e.g., navigating to a new URL in the same tab)
+// Listen for tab updates
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  console.log(`Tab updated: Tab ID: ${tabId}, Change Info:`, changeInfo);
   if (tabId === activeTabId && changeInfo.status === "complete") {
-    console.log(`Tab updated: ${tabId}, Status: ${changeInfo.status}`);
-    recordTabTime(tabId); // Record time before navigating to new URL
-    activeTabStartTime = Date.now(); // Reset start time for the new URL
-    console.log(`New tab started: ${tabId}, Start Time: ${activeTabStartTime}`);
+    recordTabTime(tabId);
+    activeTabStartTime = Date.now();
+    console.log(`Tab ID ${tabId} navigation completed; start time reset.`);
   }
 });
 
-// Listen for when a tab is removed (closed)
+// Listen for tab removal
 chrome.tabs.onRemoved.addListener((tabId) => {
+  console.log(`Tab removed: Tab ID ${tabId}`);
   if (tabId === activeTabId) {
-    console.log(`Tab closed: ${tabId}`);
-    recordTabTime(tabId); // Record time before the tab is closed
-    activeTabId = null; // Reset active tab
-    activeTabStartTime = null; // Reset start time
+    recordTabTime(tabId);
+    activeTabId = null;
+    activeTabStartTime = null;
+    console.log('Active tab cleared after removal.');
   }
 });
 
 // Listen for window focus changes
 chrome.windows.onFocusChanged.addListener((windowId) => {
-  console.log(`Window focus changed: ${windowId}`);
+  console.log(`Window focus changed: Window ID ${windowId}`);
   if (windowId === chrome.windows.WINDOW_ID_NONE) {
-    // Browser unfocused (e.g., minimized or user switched to another application)
+    console.log('No window in focus.');
     recordTabTime(activeTabId);
     activeTabId = null;
     activeTabStartTime = null;
   } else {
-    // Browser focused
     chrome.tabs.query({ active: true, windowId }, (tabs) => {
       if (tabs.length > 0) {
         activeTabId = tabs[0].id;
         activeTabStartTime = Date.now();
-        console.log(`Browser focused, active tab set to: ${activeTabId}, Start Time: ${activeTabStartTime}`);
+        console.log(`Window focus switched to Tab ID: ${activeTabId}`);
       }
     });
   }
 });
-

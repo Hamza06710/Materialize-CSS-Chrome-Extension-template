@@ -3,13 +3,14 @@ const storeName = 'usageStore';
 let db = null;
 const usageField = document.getElementById("usage-list"); // The container where the usage data will be displayed
 const limitsSelect = document.getElementById("limits-select"); // The dropdown for limits
-document.addEventListener("DOMContentLoaded", () => {
-  const addLimitButton = document.getElementById("add-limit-button");
-  const limitModal = document.getElementById("limit-modal");
-  const modalBackground = document.getElementById("modal-background");
-  const cancelModalButton = document.getElementById("cancel-modal");
-  const modalCloseButton = document.getElementById("modal-close");
-  const saveLimitButton = document.getElementById("save-limit");
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const addLimitButton = document.getElementById("add-limit-button");
+    const limitModal = document.getElementById("limit-modal");
+    const modalBackground = document.getElementById("modal-background");
+    const cancelModalButton = document.getElementById("cancel-modal");
+    const modalCloseButton = document.getElementById("modal-close");
+    const saveLimitButton = document.getElementById("save-limit");
 
   // Function to open the modal
   function openModal() {
