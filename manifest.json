@@ -15,8 +15,13 @@
     "type": "module"
   },
   "permissions": [
-    "storage",
-    "tabs",
-    "activeTab"
+  "tabs",
+  "storage",
+  "notifications",
+  "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ]
+  
 }
