@@ -1,6 +1,11 @@
 
+<<<<<<< HEAD
 let activeTabId = 0; // ID of the currently active tab
 let activeTabStartTime = 0; // Start time of the active tab
+=======
+let activeTabId = null; // ID of the currently active tab
+let activeTabStartTime = null; // Start time of the active tab
+>>>>>>> 0a41a6d6e21e9487c60cf74fe4adcbba8b499b7c
 const usageData = {}; // Object to store usage data
 
 // Save usage data to chrome.storage
